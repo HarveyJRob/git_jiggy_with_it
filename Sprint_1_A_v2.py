@@ -102,5 +102,5 @@ def create_final_dict(gene_symbol, sequence_display):
 
 
 
-# call function create_dictionary_for_nonmodel_transcript - uncomment to test
+# call function create_final_dict - uncomment to test
 #create_final_dict("BRCA1", "10")
