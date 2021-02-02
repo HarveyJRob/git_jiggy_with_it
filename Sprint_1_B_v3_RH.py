@@ -6,6 +6,8 @@ Simple rest interface for VariantValidator built using Flask Flask-RESTPlus and 
 from flask import Flask
 from flask_restplus import Api, Resource
 import Sprint_1_A_v3_RH
+import requests, sys
+
 
 
 # Define the application as a Flask app with the name defined by __name__ (i.e. the name of the current module)
@@ -29,13 +31,51 @@ class HelloClass(Resource):
         }
 
 
-vv_space = api.namespace('VariantValidator', description='VariantValidator APIs')
+vrecoder_space = api.namespace('VariantRecoder', description='Variant Recoder APIs')
+@vrecoder_space.route("/<string:ensembl_variant>")
+class VrecoderClass(Resource):
+    def get(self, ensembl_variant):
+        server = "http://rest.ensembl.org"
+        ext1 = "/variant_recoder/human/"
+        variant = ensembl_variant
 
+        r = requests.get(server + ext1 + variant + "?", headers={"Content-Type": "application/json"})
+
+        if not r.ok:
+            r.raise_for_status()
+            sys.exit()
+
+        decoded = r.json()
+        print(repr(decoded))
+        return decoded
+
+
+ensembl_space = api.namespace('Ensembl', description='Ensemble APIs')
+@ensembl_space.route("/<string:ensembl_variant>")
+class EnsemblClass(Resource):
+    def get(self, ensembl_transcript):
+        server = "http://rest.ensembl.org"
+        ext1 = "/lookup/id/"
+        variant = ensembl_transcript
+
+        r = requests.get(server + ext1 + variant + "?", headers={"Content-Type": "application/json"})
+
+        if not r.ok:
+            r.raise_for_status()
+            sys.exit()
+
+        decoded = r.json()
+        print(repr(decoded))
+        return decoded
+
+
+
+vv_space = api.namespace('VariantValidator', description='VariantValidator APIs')
 @vv_space.route("/variantvalidator/<string:genome_build>/<string:variant_description>/<string:select_transcripts>")
 class VariantValidatorClass(Resource):
     def get(self, genome_build, variant_description, select_transcripts):
         # Make a request to the current VariantValidator rest-API
-        url = '/'.join(['http://rest.variantvalidator.org/variantvalidator', genome_build, variant_description,
+        url = '/'.join(['http://rest.variantvalidator.org/VariantValidator/variantvalidator', genome_build, variant_description,
                         select_transcripts])
         print(url)
         validation = requests.get(url)
