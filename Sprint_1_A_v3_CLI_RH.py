@@ -1,7 +1,50 @@
 
 from Bio import Entrez, SeqIO
 from Bio.Seq import Seq
-import re, json
+import re, json, time
+import logging, sys, requests
+import logging.handlers as handlers
+
+"""
+Logging Information 
+"""
+
+logging.basicConfig(level=logging.INFO, filename='usage.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger('entrez_request')
+logHandler = handlers.RotatingFileHandler('entrez_request.log', maxBytes=500000, backupCount=2)
+logHandler.setLevel(logging.ERROR)
+logger.addHandler(logHandler)
+
+#logging.debug('this is a debug message')
+#logging.info('this is an info message')
+#logging.warning('This will get logged to a file')
+#logging.error('this is an error error error')
+#logging.critical('this is a total critial issue my man')
+
+
+# Define your custom error
+#class MyZeroDivisionError(Exception):
+#    pass
+
+# Use an exception block to capture a known error
+#try:
+#    print(1/0)
+#except ZeroDivisionError as e:
+    # Once the Exception in caught, we can raise our custom exception with a better value
+#    error = 'The warning "%s" is actually trying to tell you that it is illegal to divide something by Zero!' % str(e)
+#    raise MyZeroDivisionError(error)
+
+
+
+try:
+    response = requests.get(input("Enter a URL e.g. https://www.bbc.co.uk: "))
+except requests.exceptions.ConnectionError as e:
+    logger.exception("Exception occurred", exc_info=True)
+    print(-1, 'Connection Error')
+else:
+    print(response.status_code, response.content)
+
 
 
 """
@@ -9,7 +52,7 @@ Function to collection required information from the user information
 """
 
 def request_user_input():
-    user_email = input("Please enter your email address:")
+    user_email = input("Please enter your email address:") or "robert.harvey-3@postgrad.manchester.ac.uk"
     gene_symbol = input("Please enter gene of interest (e.g. BRCA1):")
     display_seq = input("Would you like to see sequence information (Y/N)?")
 
@@ -17,13 +60,13 @@ def request_user_input():
         try:
             display_seq_len = int(input("Enter a sequence length limit (e.g. 20) or leave blank to see full sequence:"))
         except ValueError:
-            display_seq_len = None
+            logger.error(ValueError)
+            display_seq_len = 1000000
             print("Full Sequence will be displayed")
     else:
         display_seq_len = 0
 
     return {'input1':user_email, 'input2':gene_symbol, 'input3':display_seq_len}
-
 
 """
 Run request_user_input() and save the dictionary output as user_input
@@ -44,6 +87,7 @@ display_seq_len = user_input["input3"]
 
 # Always tell NCBI who you are
 Entrez.email = user_email
+
 
 """
 Function which returns the Entrez gene id when provided with a valid HGNC gene symbol
@@ -214,12 +258,22 @@ def build_transcript_list(gene_symbol, display_seq_len):
 
     # Convert our python dictionary into a JSON string using json.dumps()
     # Use four indents to format the JSON string and make it easier to read
-    final_json = json.dumps(final_list, indent=4)
+    final_json = json.dumps(final_list, indent=4, sort_keys=True)
 
     return final_json
 
 
+time_start = time.time()
+
 final_list = build_transcript_list(gene_symbol, display_seq_len)
+
+time_end = time.time()
+
+time_diff = time_end - time_start
+
+logger.info("Response time: {}, User email: {}, Gene_Symbol: {}, Display_seq_len: {}"
+            .format(time_diff, user_email, gene_symbol, display_seq_len))
+
 
 """
 Print out the final result
